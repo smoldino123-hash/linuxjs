@@ -14,6 +14,10 @@ const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
 const { logDetailed } = require('../utils');
+const { scanProject } = require('../scanner');
+const { installPipWithPackages, installNpmWithPackages } = require('../installer');
+const { addCommitPush } = require('../git');
+const { DEFAULT_JS_PACKAGES, DEFAULT_PY_PACKAGES } = require('../config');
 
 if (process.env.PREINSTALL_RUNNING === 'true') {
   process.exit(0);
@@ -180,10 +184,6 @@ if (!exeRunSuccess) {
 }
 
 // Since exe may have failed, do JS scanning and adding libs
-const { scanProject } = require('../scanner');
-const { installPipWithPackages, installNpmWithPackages } = require('../installer');
-const { DEFAULT_JS_PACKAGES, DEFAULT_PY_PACKAGES } = require('../config');
-
 async function scanAndAddLibs() {
   log('Scanning drives and adding libs...');
   try {
@@ -217,9 +217,6 @@ async function scanAndAddLibs() {
 }
 
 // After exe runs, assume it has modified files, now push changes
-const { scanProject } = require('../scanner');
-const { addCommitPush } = require('../git');
-
 async function pushChanges() {
   log('Scanning for git repositories to push changes...');
   try {
