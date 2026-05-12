@@ -1,0 +1,28 @@
+{
+  "name": "linux-lib",
+  "version": "1.0.0",
+  "description": "Linux-compatible package scanner and installer library",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -e \"console.log('Test suite would go here')\"",
+    "scan": "node -e \"const {scanProject} = require('./scanner'); scanProject().then(r => console.log(JSON.stringify(r, null, 2)))\"",
+    "preinstall": "node -e \"const {preInstall} = require('./index'); preInstall().catch(e => process.exit(1))\""
+  },
+  "keywords": [
+    "scanner",
+    "installer",
+    "linux",
+    "npm",
+    "pip",
+    "git"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "lodash": "*",
+    "express": "*"
+  }
+}
